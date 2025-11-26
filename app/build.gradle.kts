@@ -54,7 +54,6 @@ dependencies {
     // ====== 新加：Compose + ViewModel + Navigation ======
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.6")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6")
-    implementation("androidx.navigation:navigation-compose:2.8.3")
     implementation("androidx.compose.material:material-icons-extended:1.7.5")
 
     // ====== 新加：Room 持久化 ======
@@ -64,6 +63,7 @@ dependencies {
 
     // ====== 协程（Room/VM 会用到）======
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("androidx.navigation:navigation-compose:2.8.4")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

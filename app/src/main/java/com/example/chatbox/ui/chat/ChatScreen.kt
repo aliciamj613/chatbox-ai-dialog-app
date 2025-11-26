@@ -1,64 +1,116 @@
 package com.example.chatbox.ui.chat
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.chatbox.ui.components.InputBar
-import com.example.chatbox.ui.components.MessageBubble
-import com.example.chatbox.ui.components.TopBar
+
+// 简单的消息数据模型（不连数据库、不连网络）
+data class SimpleMessage(
+    val id: Long,
+    val text: String,
+    val fromUser: Boolean
+)
 
 @Composable
-fun ChatScreen(
-    viewModel: ChatViewModel
-) {
-    val state by viewModel.uiState.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    LaunchedEffect(state.error) {
-        state.error?.let { snackbarHostState.showSnackbar(it) }
+fun ChatScreen() {
+    var input by remember { mutableStateOf("") }
+    var messages by remember {
+        mutableStateOf(
+            listOf(
+                SimpleMessage(1, "Hi, I'm your AI assistant.", fromUser = false),
+                SimpleMessage(2, "你可以先在这里测试界面~", fromUser = false)
+            )
+        )
     }
 
-    Scaffold(
-        topBar = { TopBar(title = "ChatBox", onClear = { /* TODO: 清空逻辑可后加 */ }) },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-    ) { innerPadding ->
-        Column(
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        // 顶部标题
+        Text(
+            text = "Chat Screen",
+            style = MaterialTheme.typography.titleLarge
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 消息列表
+        LazyColumn(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+                .weight(1f)
+                .fillMaxWidth()
         ) {
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(vertical = 4.dp)
-            ) {
-                items(state.messages) { msg ->
-                    MessageBubble(
-                        text = msg.content,
-                        isUser = msg.role == "user"
-                    )
+            items(messages) { msg ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = if (msg.fromUser)
+                        Arrangement.End else Arrangement.Start
+                ) {
+                    Surface(
+                        color = if (msg.fromUser)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.secondaryContainer,
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Text(
+                            text = msg.text,
+                            modifier = Modifier.padding(8.dp),
+                            color = if (msg.fromUser)
+                                MaterialTheme.colorScheme.onPrimary
+                            else
+                                MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
                 }
             }
+        }
 
-            InputBar(
-                text = state.input,
-                onTextChange = viewModel::onInputChange,
-                onSendClick = viewModel::onSend,
-                onImageClick = { /* TODO 多模态入口 */ },
-                enabled = !state.isSending
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 底部输入栏 + 发送按钮
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = input,
+                onValueChange = { input = it },
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("Say something...") },
+                singleLine = true
             )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Button(
+                onClick = {
+                    if (input.isNotBlank()) {
+                        val newId = (messages.maxOfOrNull { it.id } ?: 0L) + 1
+                        messages = messages + SimpleMessage(
+                            id = newId,
+                            text = input,
+                            fromUser = true
+                        )
+                        input = ""
+                    }
+                }
+            ) {
+                Text("Send")
+            }
         }
     }
 }
