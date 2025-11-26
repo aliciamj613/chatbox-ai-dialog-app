@@ -1,32 +1,25 @@
-// app/src/main/java/com/example/chatbox/data/repository/ChatRepositoryImpl.kt
 package com.example.chatbox.data.repository
 
 import com.example.chatbox.data.local.db.MessageDao
 import com.example.chatbox.data.model.MessageEntity
+import com.example.chatbox.data.remote.ChatApiService
+import com.example.chatbox.data.remote.ChatMessage
+import com.example.chatbox.data.remote.ChatRequest
 import com.example.chatbox.domain.model.Message
 import com.example.chatbox.domain.repository.ChatRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import retrofit2.HttpException
+import android.util.Log
 
-/**
- * 聊天仓库实现：
- * - 负责把 Room 的 Entity 转成 Domain Model
- * - sendOnlineMessage 先用本地“假 AI 回复”，后续你接入真实 API 再改
- */
 class ChatRepositoryImpl(
-    private val messageDao: MessageDao
+    private val messageDao: MessageDao,
+    private val api: ChatApiService
 ) : ChatRepository {
 
-    // ========= 本地 Room 部分 =========
-
-    override fun getHistory(): Flow<List<Message>> {
-        return messageDao.observeMessages()
-            .map { entityList: List<MessageEntity> ->
-                entityList.map { entity: MessageEntity ->
-                    entity.toDomain()
-                }
-            }
-    }
+    override fun getHistory(): Flow<List<Message>> =
+        messageDao.observeMessages()
+            .map { entities -> entities.map { it.toDomain() } }
 
     override suspend fun insertMessage(message: Message) {
         messageDao.insertMessage(message.toEntity())
@@ -37,19 +30,11 @@ class ChatRepositoryImpl(
     }
 
     override suspend fun deleteMessage(message: Message) {
-        // 目前没有 deleteById，就先空实现，防止接口不匹配
-        // 如果以后在 Dao 里加：
-        // @Query("DELETE FROM messages WHERE id = :id")
-        // suspend fun deleteById(id: Long)
-        //
-        // 这里就可以写：
-        // messageDao.deleteById(message.id)
+        // 暂时不用
     }
 
-    // ========= 在线消息（暂时本地模拟） =========
-
     override suspend fun sendOnlineMessage(userText: String): Message {
-        // 1. 先把用户消息写入数据库
+        // 先保存用户消息
         val userMessage = Message(
             id = 0L,
             text = userText,
@@ -58,17 +43,42 @@ class ChatRepositoryImpl(
         )
         messageDao.insertMessage(userMessage.toEntity())
 
-        // 2. 这里先用“假 AI 回复”占位，后面你接真实 API
-        val aiMessage = Message(
-            id = 0L,
-            text = "（模拟 AI 回复）你刚才说：$userText",
-            isUser = false,
-            timestamp = System.currentTimeMillis()
-        )
-        messageDao.insertMessage(aiMessage.toEntity())
+        return try {
+            // 组装请求体
+            val request = ChatRequest(
+                messages = listOf(
+                    ChatMessage(role = "user", content = userText)
+                )
+            )
 
-        // 返回 AI 消息（其实 UI 主要是通过 getHistory Flow 刷新）
-        return aiMessage
+            // 调用智谱 API
+            val response = api.sendChat(request)
+
+            val replyText = response.choices.firstOrNull()?.message?.content
+                ?: "（智谱 API 没有返回内容）"
+
+            val aiMessage = Message(
+                id = 0L,
+                text = replyText,
+                isUser = false,
+                timestamp = System.currentTimeMillis()
+            )
+            messageDao.insertMessage(aiMessage.toEntity())
+            aiMessage
+        } catch (e: HttpException) {
+            val code = e.code()
+            val body = e.response()?.errorBody()?.string()
+            Log.e("ChatRepository", "HTTP $code error: $body", e)
+
+            val aiMessage = Message(
+                id = 0L,
+                text = "请求失败：HTTP $code\n${body ?: ""}",
+                isUser = false,
+                timestamp = System.currentTimeMillis()
+            )
+            messageDao.insertMessage(aiMessage.toEntity())
+            aiMessage
+        }
     }
 }
 
