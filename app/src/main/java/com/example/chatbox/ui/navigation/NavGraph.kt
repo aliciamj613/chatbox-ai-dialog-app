@@ -1,3 +1,4 @@
+// app/src/main/java/com/example/chatbox/ui/navigation/NavGraph.kt
 package com.example.chatbox.ui.navigation
 
 import androidx.compose.runtime.Composable
@@ -23,7 +24,9 @@ fun AppNavGraph(
     ) {
         composable(Routes.LOGIN) {
             LoginScreen(
-                onLoginSuccess = {
+                onLoginSuccess = { _userId ->
+                    // 目前先不把 userId 传到 ChatScreen，
+                    // 后面做“按用户/会话区分历史”时再用。
                     navController.navigate(Routes.CHAT) {
                         popUpTo(Routes.LOGIN) { inclusive = true }
                     }
@@ -31,7 +34,7 @@ fun AppNavGraph(
             )
         }
 
-        composable("chat") {
+        composable(Routes.CHAT) {
             ChatScreen()
         }
     }

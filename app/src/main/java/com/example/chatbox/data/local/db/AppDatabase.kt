@@ -9,7 +9,7 @@ import com.example.chatbox.data.model.UserEntity
 
 @Database(
     entities = [MessageEntity::class, UserEntity::class],
-    version = 2,            // ⬅️ 把 1 改成 2
+    version = 3,          // 记得比之前大就行（你之前 1/2 都没事）
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -18,22 +18,30 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
 
     companion object {
-
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
+        /**
+         * 旧代码里用的名字：getInstance(context)
+         */
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: Room.databaseBuilder(
+                val instance = INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     "chatbox.db"
                 )
-                    // ⬅️ 关键：如果 schema 变了，又没写 Migration，就直接删库重建
+                    // 开发阶段：表结构变了就直接删库重建，避免 Room 崩
                     .fallbackToDestructiveMigration()
                     .build()
-                    .also { INSTANCE = it }
+                INSTANCE = instance
+                instance
             }
         }
+
+        /**
+         * 新代码里用的别名：getDatabase(context)
+         */
+        fun getDatabase(context: Context): AppDatabase = getInstance(context)
     }
 }
