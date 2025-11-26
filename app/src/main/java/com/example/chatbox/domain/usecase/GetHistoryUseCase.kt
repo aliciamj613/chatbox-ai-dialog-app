@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/chatbox/domain/usecase/GetHistoryUseCase.kt
 package com.example.chatbox.domain.usecase
 
 import com.example.chatbox.domain.model.Message
@@ -8,5 +7,7 @@ import kotlinx.coroutines.flow.Flow
 class GetHistoryUseCase(
     private val repository: ChatRepository
 ) {
-    operator fun invoke(): Flow<List<Message>> = repository.getHistory()
+    operator fun invoke(conversationId: Long): Flow<List<Message>> {
+        return repository.getHistory(conversationId)
+    }
 }

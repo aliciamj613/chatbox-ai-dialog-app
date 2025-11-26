@@ -1,16 +1,6 @@
 package com.example.chatbox.ui.chat
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -25,8 +15,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,21 +28,20 @@ import com.example.chatbox.ui.theme.ChatboxTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
-    viewModel: ChatViewModel = ChatViewModel()
+    conversationId: Long,
+    viewModel: ChatViewModel = ChatViewModel(conversationId = conversationId)
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     // 🌙 夜间模式本地开关（只影响 ChatScreen）
     var isDark by rememberSaveable { mutableStateOf(false) }
 
-    // 用我们自己的 Theme 包一层，根据 isDark 切换
     ChatboxTheme(darkTheme = isDark) {
         Scaffold(
             topBar = {
                 TopAppBar(
                     title = { Text("ChatBox") },
                     actions = {
-                        // 顶部右侧的小按钮：点击切换明/暗
                         TextButton(onClick = { isDark = !isDark }) {
                             Text(
                                 text = if (isDark) "☀️" else "🌙",
@@ -70,7 +59,6 @@ fun ChatScreen(
                     .padding(innerPadding)
             ) {
 
-                // ✅ 消息列表：占用上方所有空间 + 可滚
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)
@@ -83,7 +71,6 @@ fun ChatScreen(
                     }
                 }
 
-                // 错误提示（如果有）
                 if (uiState.error != null) {
                     Text(
                         text = uiState.error!!,
@@ -96,7 +83,6 @@ fun ChatScreen(
                     )
                 }
 
-                // ✅ 底部输入栏：固定在最底部
                 ChatInputBar(
                     text = uiState.inputText,
                     onTextChange = viewModel::onInputChange,
