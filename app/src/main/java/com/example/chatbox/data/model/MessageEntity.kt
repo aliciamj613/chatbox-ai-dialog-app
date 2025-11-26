@@ -10,5 +10,7 @@ data class MessageEntity(
     val id: Long = 0L,
     val text: String,
     val isUser: Boolean,
-    val timestamp: Long
+    val timestamp: Long,
+    // ✅ 新增字段：所属会话 ID，暂时默认 1
+    val conversationId: Long = 1L
 )
