@@ -20,15 +20,20 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.chatbox.domain.model.Message
+import com.example.chatbox.ui.theme.ChatboxTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,68 +42,68 @@ fun ChatScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // ⚠️ 调试：如果数据库里暂时没有太多消息，就造一批假数据出来保证一定能滚
-    val displayMessages: List<Message> =
-        if (uiState.messages.isEmpty()) {
-            (1..40).map { i ->
-                Message(
-                    id = i.toLong(),
-                    text = "测试消息 $i —— 这是为了检查列表滚动用的",
-                    isUser = i % 2 == 0,
-                    timestamp = System.currentTimeMillis()
+    // 🌙 夜间模式本地开关（只影响 ChatScreen）
+    var isDark by rememberSaveable { mutableStateOf(false) }
+
+    // 用我们自己的 Theme 包一层，根据 isDark 切换
+    ChatboxTheme(darkTheme = isDark) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("ChatBox") },
+                    actions = {
+                        // 顶部右侧的小按钮：点击切换明/暗
+                        TextButton(onClick = { isDark = !isDark }) {
+                            Text(
+                                text = if (isDark) "☀️" else "🌙",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+                    }
                 )
-            }
-        } else {
-            uiState.messages
-        }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("ChatBox") }
-            )
-        },
-        modifier = Modifier.fillMaxSize()
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-
-            // ✅ 消息列表：占用上方所有空间 + 肯定比一屏多
-            LazyColumn(
+            },
+            modifier = Modifier.fillMaxSize()
+        ) { innerPadding ->
+            Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentPadding = PaddingValues(8.dp)
+                    .fillMaxSize()
+                    .padding(innerPadding)
             ) {
-                items(displayMessages) { message ->
-                    MessageBubble(message = message)
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
-            }
 
-            // 错误提示（如果有）
-            if (uiState.error != null) {
-                Text(
-                    text = uiState.error!!,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
+                // ✅ 消息列表：占用上方所有空间 + 可滚
+                LazyColumn(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    textAlign = TextAlign.Center
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentPadding = PaddingValues(8.dp)
+                ) {
+                    items(uiState.messages) { message ->
+                        MessageBubble(message = message)
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                }
+
+                // 错误提示（如果有）
+                if (uiState.error != null) {
+                    Text(
+                        text = uiState.error!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                // ✅ 底部输入栏：固定在最底部
+                ChatInputBar(
+                    text = uiState.inputText,
+                    onTextChange = viewModel::onInputChange,
+                    onSendClick = viewModel::onSendClick,
+                    isSending = uiState.isSending
                 )
             }
-
-            // ✅ 底部输入栏：固定在最底
-            ChatInputBar(
-                text = uiState.inputText,
-                onTextChange = viewModel::onInputChange,
-                onSendClick = viewModel::onSendClick,
-                isSending = uiState.isSending
-            )
         }
     }
 }
