@@ -1,9 +1,8 @@
 package com.example.chatbox.domain.model
 
 data class Message(
-    val id: Long = 0L,
-    val userId: String,
-    val role: String,      // "user" / "assistant"
-    val content: String,
-    val timestamp: Long
+    val id: Long,
+    val text: String,
+    val isUser: Boolean,
+    val timestamp: Long = System.currentTimeMillis()
 )

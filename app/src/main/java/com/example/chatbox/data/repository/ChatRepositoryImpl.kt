@@ -1,50 +1,39 @@
 package com.example.chatbox.data.repository
 
-import com.example.chatbox.data.local.db.MessageDao
-import com.example.chatbox.data.model.toDomain
-import com.example.chatbox.data.model.toEntity
 import com.example.chatbox.domain.model.Message
 import com.example.chatbox.domain.repository.ChatRepository
-import com.example.chatbox.util.Result
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
-class ChatRepositoryImpl(
-    private val messageDao: MessageDao
-) : ChatRepository {
+class ChatRepositoryImpl : ChatRepository {
 
-    override fun observeMessages(userId: String): Flow<List<Message>> =
-        messageDao.observeMessages(userId).map { list ->
-            list.map { it.toDomain() }
-        }
+    // 暂时用内存 List 模拟历史记录
+    private val messages = mutableListOf<Message>()
 
-    override suspend fun clearMessages(userId: String) {
-        messageDao.clearMessages(userId)
-    }
-
-    override suspend fun sendMessage(userId: String, content: String): Result<Unit> = try {
-        val now = System.currentTimeMillis()
+    override suspend fun sendMessage(userId: String, text: String): List<Message> {
+        val currentId = (messages.maxOfOrNull { it.id } ?: 0L) + 1L
 
         val userMsg = Message(
-            userId = userId,
-            role = "user",
-            content = content,
-            timestamp = now
+            id = currentId,
+            text = text,
+            isUser = true
         )
+        messages += userMsg
 
-        // 伪造一个 AI 回复，先跑通
-        delay(500)
-        val aiMsg = Message(
-            userId = userId,
-            role = "assistant",
-            content = "AI: $content",
-            timestamp = now + 1
+        // 模拟一下网络延迟
+        delay(200)
+
+        val botMsg = Message(
+            id = currentId + 1,
+            text = "Echo from repo: $text",
+            isUser = false
         )
+        messages += botMsg
 
-        messageDao.insertMessages(listOf(userMsg.toEntity(), aiMsg.toEntity()))
-        Result.Success(Unit)
-    } catch (e: Exception) {
-        Result.Error(e)
+        return messages.toList()
+    }
+
+    override suspend fun getHistory(userId: String): List<Message> {
+        // 现在就直接返回内存里的 list
+        return messages.toList()
     }
 }

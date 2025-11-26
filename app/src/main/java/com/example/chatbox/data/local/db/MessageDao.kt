@@ -11,11 +11,11 @@ import kotlinx.coroutines.flow.Flow
 interface MessageDao {
 
     @Query("SELECT * FROM messages WHERE userId = :userId ORDER BY timestamp ASC")
-    fun observeMessages(userId: String): Flow<List<MessageEntity>>
+    fun observeMessages(userId: Long): Flow<List<MessageEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMessages(messages: List<MessageEntity>)
+    suspend fun insertMessage(message: MessageEntity)
 
     @Query("DELETE FROM messages WHERE userId = :userId")
-    suspend fun clearMessages(userId: String)
+    suspend fun clearMessages(userId: Long)
 }

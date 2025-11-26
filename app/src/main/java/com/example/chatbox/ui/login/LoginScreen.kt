@@ -1,13 +1,10 @@
 package com.example.chatbox.ui.login
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -19,20 +16,19 @@ fun LoginScreen(
     var error by remember { mutableStateOf<String?>(null) }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .padding(24.dp)
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "ChatBox Login")
+            Text(text = "ChatBox Login", style = MaterialTheme.typography.headlineSmall)
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            OutlinedTextField(
+            TextField(
                 value = username,
                 onValueChange = { username = it },
                 label = { Text("Username") },
@@ -40,37 +36,33 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
+            TextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password") },
-                visualTransformation = PasswordVisualTransformation(),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            if (error != null) {
+                Text(
+                    text = error ?: "",
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
 
             Button(
                 onClick = {
-                    if (username.isNotBlank()) {
-                        // 不做真正校验，直接当作登录成功
+                    if (username.isBlank() || password.isBlank()) {
+                        error = "Username and password cannot be empty"
+                    } else {
                         error = null
                         onLoginSuccess()
-                    } else {
-                        error = "Username 不能为空"
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(text = "Login")
-            }
-
-            error?.let {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = it)
+                Text("Login")
             }
         }
     }

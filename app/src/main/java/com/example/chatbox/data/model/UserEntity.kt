@@ -2,13 +2,14 @@ package com.example.chatbox.data.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.example.chatbox.domain.model.User
 
+/**
+ * Room 用的用户实体。
+ * 和现在的领域模型 User 保持一致：id + name。
+ */
 @Entity(tableName = "users")
 data class UserEntity(
-    @PrimaryKey val id: String,
-    val displayName: String
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0L,
+    val name: String
 )
-
-fun UserEntity.toDomain(): User = User(id = id, displayName = displayName)
-fun User.toEntity(): UserEntity = UserEntity(id = id, displayName = displayName)
