@@ -31,7 +31,7 @@ fun AppNavGraph(
             )
         }
 
-        composable(Routes.CHAT) {
+        composable("chat") {
             ChatScreen()
         }
     }

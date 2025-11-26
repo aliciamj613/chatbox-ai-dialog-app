@@ -9,7 +9,7 @@ import com.example.chatbox.data.model.UserEntity
 
 @Database(
     entities = [MessageEntity::class, UserEntity::class],
-    version = 1,
+    version = 2,            // ⬅️ 把 1 改成 2
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -18,6 +18,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
 
     companion object {
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
@@ -27,7 +28,11 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "chatbox.db"
-                ).build().also { INSTANCE = it }
+                )
+                    // ⬅️ 关键：如果 schema 变了，又没写 Migration，就直接删库重建
+                    .fallbackToDestructiveMigration()
+                    .build()
+                    .also { INSTANCE = it }
             }
         }
     }
