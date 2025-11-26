@@ -1,15 +1,11 @@
 package com.example.chatbox.domain.usecase
 
-import com.example.chatbox.domain.model.Message
 import com.example.chatbox.domain.repository.ChatRepository
 
 class SendMessageUseCase(
-    private val chatRepository: ChatRepository
+    private val repository: ChatRepository
 ) {
-    suspend operator fun invoke(
-        userId: String,
-        text: String
-    ): List<Message> {
-        return chatRepository.sendMessage(userId, text)
+    suspend operator fun invoke(text: String, isUser: Boolean) {
+        repository.addLocalMessage(text, isUser)
     }
 }

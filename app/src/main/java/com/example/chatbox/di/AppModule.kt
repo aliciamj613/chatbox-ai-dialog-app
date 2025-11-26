@@ -1,20 +1,28 @@
 package com.example.chatbox.di
 
-import com.example.chatbox.data.repository.AuthRepositoryImpl
+import android.content.Context
+import com.example.chatbox.data.local.db.AppDatabase
 import com.example.chatbox.data.repository.ChatRepositoryImpl
-import com.example.chatbox.domain.repository.AuthRepository
 import com.example.chatbox.domain.repository.ChatRepository
 
-/**
- * 超轻量 DI 容器，只提供单例仓库。
- */
 object AppModule {
 
-    val chatRepository: ChatRepository by lazy {
-        ChatRepositoryImpl()
+    private lateinit var appContext: Context
+
+    fun init(context: Context) {
+        appContext = context.applicationContext
     }
 
-    val authRepository: AuthRepository by lazy {
-        AuthRepositoryImpl()
+    private val database: AppDatabase by lazy {
+        AppDatabase.getInstance(appContext)
     }
+
+    private val chatRepositoryImpl: ChatRepositoryImpl by lazy {
+        ChatRepositoryImpl(
+            messageDao = database.messageDao()
+        )
+    }
+
+    val chatRepository: ChatRepository
+        get() = chatRepositoryImpl
 }

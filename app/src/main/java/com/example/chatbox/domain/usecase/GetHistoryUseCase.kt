@@ -2,13 +2,10 @@ package com.example.chatbox.domain.usecase
 
 import com.example.chatbox.domain.model.Message
 import com.example.chatbox.domain.repository.ChatRepository
+import kotlinx.coroutines.flow.Flow
 
 class GetHistoryUseCase(
-    private val chatRepository: ChatRepository
+    private val repository: ChatRepository
 ) {
-    suspend operator fun invoke(
-        userId: String
-    ): List<Message> {
-        return chatRepository.getHistory(userId)
-    }
+    operator fun invoke(): Flow<List<Message>> = repository.observeMessages()
 }
