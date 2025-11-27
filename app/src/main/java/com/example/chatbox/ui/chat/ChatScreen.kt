@@ -1,14 +1,23 @@
 package com.example.chatbox.ui.chat
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -29,18 +38,22 @@ import com.example.chatbox.ui.theme.ChatboxTheme
 @Composable
 fun ChatScreen(
     conversationId: Long,
+    onBackToConversations: () -> Unit,
     viewModel: ChatViewModel = ChatViewModel(conversationId = conversationId)
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
-    // 🌙 夜间模式本地开关（只影响 ChatScreen）
     var isDark by rememberSaveable { mutableStateOf(false) }
 
     ChatboxTheme(darkTheme = isDark) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("ChatBox") },
+                    title = { Text(text = "对话 #$conversationId") },
+                    navigationIcon = {
+                        TextButton(onClick = onBackToConversations) {
+                            Text("会话")
+                        }
+                    },
                     actions = {
                         TextButton(onClick = { isDark = !isDark }) {
                             Text(
@@ -58,30 +71,46 @@ fun ChatScreen(
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxWidth(),
-                    contentPadding = PaddingValues(8.dp)
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(uiState.messages) { message ->
-                        MessageBubble(message = message)
-                        Spacer(modifier = Modifier.height(4.dp))
+                    if (uiState.messages.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "开始和 AI 聊天吧～",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                    } else {
+                        items(uiState.messages) { message ->
+                            MessageBubble(message = message)
+                        }
                     }
                 }
 
                 if (uiState.error != null) {
                     Text(
-                        text = uiState.error!!,
+                        text = uiState.error ?: "",
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        textAlign = TextAlign.Center
+                            .padding(horizontal = 16.dp)
                     )
                 }
+
+                Divider()
 
                 ChatInputBar(
                     text = uiState.inputText,
@@ -98,32 +127,23 @@ fun ChatScreen(
 private fun MessageBubble(
     message: Message
 ) {
-    val isUser = message.isUser
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp),
-        horizontalArrangement = if (isUser) {
+            .padding(vertical = 4.dp),
+        horizontalArrangement = if (message.isUser) {
             Arrangement.End
         } else {
             Arrangement.Start
         }
     ) {
-        Surface(
-            tonalElevation = 2.dp,
-            shape = MaterialTheme.shapes.medium,
-            color = if (isUser) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            }
+        Box(
+            modifier = Modifier
+                .widthIn(max = 280.dp)
+                .padding(horizontal = 8.dp)
         ) {
             Text(
                 text = message.text,
-                modifier = Modifier
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-                    .widthIn(max = 260.dp),
                 style = MaterialTheme.typography.bodyMedium
             )
         }
@@ -140,24 +160,26 @@ private fun ChatInputBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         OutlinedTextField(
             value = text,
             onValueChange = onTextChange,
             modifier = Modifier.weight(1f),
-            singleLine = true,
-            placeholder = { Text("输入消息…") }
+            placeholder = { Text("请输入消息") }
         )
 
         Spacer(modifier = Modifier.width(8.dp))
 
         Button(
             onClick = onSendClick,
-            enabled = text.isNotBlank() && !isSending
+            enabled = !isSending && text.isNotBlank()
         ) {
-            Text(if (isSending) "发送中…" else "发送")
+            Text(
+                text = if (isSending) "发送中..." else "发送",
+                textAlign = TextAlign.Center
+            )
         }
     }
 }

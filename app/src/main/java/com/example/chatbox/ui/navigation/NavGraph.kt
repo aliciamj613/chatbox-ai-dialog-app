@@ -1,7 +1,6 @@
 package com.example.chatbox.ui.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,29 +17,26 @@ object Routes {
 }
 
 @Composable
-fun AppNavGraph(
-    navController: NavHostController = rememberNavController()
-) {
+fun AppNavGraph() {
+    val navController = rememberNavController()
+
     NavHost(
         navController = navController,
         startDestination = Routes.LOGIN
     ) {
-        // 登录页
         composable(Routes.LOGIN) {
             LoginScreen(
-                onLoginSuccess = { _userId ->
+                onLoginSuccess = {
                     navController.navigate(Routes.CONVERSATIONS) {
-                        popUpTo(Routes.LOGIN) { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
         }
 
-        // 会话列表页
         composable(Routes.CONVERSATIONS) {
             ConversationListScreen(
                 onOpenConversation = { conversationId ->
-                    // 👉 把会话 ID 拼进路由
                     navController.navigate("${Routes.CHAT}/$conversationId")
                 },
                 onLogout = {
@@ -51,16 +47,21 @@ fun AppNavGraph(
             )
         }
 
-        // 聊天页：带会话 ID 参数
         composable(
             route = "${Routes.CHAT}/{conversationId}",
             arguments = listOf(
-                navArgument("conversationId") { type = NavType.LongType }
+                navArgument("conversationId") {
+                    type = NavType.LongType
+                }
             )
         ) { backStackEntry ->
             val conversationId =
-                backStackEntry.arguments?.getLong("conversationId") ?: 1L
-            ChatScreen(conversationId = conversationId)
+                backStackEntry.arguments?.getLong("conversationId") ?: 0L
+
+            ChatScreen(
+                conversationId = conversationId,
+                onBackToConversations = { navController.navigateUp() }
+            )
         }
     }
 }
