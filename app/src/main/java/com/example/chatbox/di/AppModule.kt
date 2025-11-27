@@ -22,7 +22,7 @@ object AppModule {
 
     // ✅ 把这里换成你自己的智谱 API Key
     // 比如：const val ZHIPU_API_KEY = "sk-xxxx"
-    private const val ZHIPU_API_KEY = "ed6a6b1fd3154139b438d05862734d31.uAsW6rz9m5ZXvoWj"
+    private const val ZHIPU_API_KEY = ""
 
     // Application Context
     private lateinit var appContext: Context
