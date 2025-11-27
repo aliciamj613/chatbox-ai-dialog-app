@@ -1,33 +1,17 @@
 package com.example.chatbox.ui.conversation
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.chatbox.data.local.db.AppDatabase
+import com.example.chatbox.data.local.prefs.UserPreferences
 import com.example.chatbox.data.model.ConversationEntity
 import kotlinx.coroutines.launch
 
@@ -38,14 +22,35 @@ fun ConversationListScreen(
     onLogout: () -> Unit
 ) {
     val context = LocalContext.current
-    val db = AppDatabase.getInstance(context)
-    val conversationDao = db.conversationDao()
-    val messageDao = db.messageDao()
-
-    val conversationsFlow = conversationDao.observeConversations()
-    val conversations by conversationsFlow.collectAsState(initial = emptyList())
+    val db = remember { AppDatabase.getDatabase(context) }
+    val conversationDao = remember { db.conversationDao() }
+    val messageDao = remember { db.messageDao() }
+    val prefs = remember { UserPreferences(context) }
 
     val scope = rememberCoroutineScope()
+
+    val currentUserId = remember { prefs.getLastUserId() }
+
+    // 如果拿不到当前用户，提示重新登录
+    if (currentUserId == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("当前用户信息丢失，请重新登录")
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(onClick = onLogout) {
+                    Text("返回登录页")
+                }
+            }
+        }
+        return
+    }
+
+    val conversations by conversationDao
+        .observeConversations(currentUserId)
+        .collectAsState(initial = emptyList())
 
     Scaffold(
         topBar = {
@@ -53,7 +58,7 @@ fun ConversationListScreen(
                 title = { Text("我的对话") },
                 actions = {
                     TextButton(onClick = onLogout) {
-                        Text(text = "退出登录")
+                        Text("退出登录")
                     }
                 }
             )
@@ -62,11 +67,13 @@ fun ConversationListScreen(
             FloatingActionButton(
                 onClick = {
                     scope.launch {
+                        val now = System.currentTimeMillis()
                         val id = conversationDao.insertConversation(
                             ConversationEntity(
+                                userId = currentUserId,
                                 title = "新的对话",
-                                createdAt = System.currentTimeMillis(),
-                                updatedAt = System.currentTimeMillis()
+                                createdAt = now,
+                                updatedAt = now
                             )
                         )
                         onOpenConversation(id)
@@ -84,10 +91,7 @@ fun ConversationListScreen(
                     .padding(innerPadding),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "还没有任何对话，点击右下角 + 开始新对话吧～",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Text("还没有任何对话，点击右下角 + 开始新对话吧～")
             }
         } else {
             LazyColumn(
@@ -102,9 +106,7 @@ fun ConversationListScreen(
                         onClick = { onOpenConversation(conversation.id) },
                         onDelete = {
                             scope.launch {
-                                // 删除会话
                                 conversationDao.deleteConversationById(conversation.id)
-                                // 同时清空该会话下的消息
                                 messageDao.clearConversation(conversation.id)
                             }
                         }
@@ -133,12 +135,10 @@ private fun ConversationRow(
             modifier = Modifier.weight(1f)
         ) {
             Text(
-                text = conversation.title.ifBlank { "未命名对话" },
+                text = if (conversation.title.isBlank()) "未命名对话" else conversation.title,
                 style = MaterialTheme.typography.titleMedium
             )
-
             Spacer(modifier = Modifier.height(4.dp))
-
             Text(
                 text = "最近更新：${conversation.updatedAt}",
                 style = MaterialTheme.typography.bodySmall,

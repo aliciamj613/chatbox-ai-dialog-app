@@ -5,14 +5,17 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 /**
- * 会话表：后面用来做“会话列表 + 点击进入某个对话”
+ * 会话表：做“会话列表 + 点击进入某个对话”
  */
 @Entity(tableName = "conversations")
 data class ConversationEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0L,
 
-    // 会话标题（可以是用户自定义，也可以先用“对话 #1”这种）
+    // ✅ 绑定所属用户
+    val userId: Long,
+
+    // 会话标题（可以自动生成，也可以后面支持改名）
     val title: String,
 
     // 创建时间

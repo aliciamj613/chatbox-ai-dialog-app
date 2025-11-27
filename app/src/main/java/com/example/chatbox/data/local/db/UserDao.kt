@@ -1,3 +1,4 @@
+// app/src/main/java/com/example/chatbox/data/local/db/UserDao.kt
 package com.example.chatbox.data.local.db
 
 import androidx.room.Dao
@@ -18,7 +19,7 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE id = :id LIMIT 1")
     suspend fun getUserById(id: Long): UserEntity?
 
-    // 忘记密码：根据用户名重置密码
+    /** 忘记密码：根据用户名更新密码 */
     @Query("UPDATE users SET password = :newPassword WHERE name = :name")
     suspend fun updatePassword(name: String, newPassword: String)
 }
