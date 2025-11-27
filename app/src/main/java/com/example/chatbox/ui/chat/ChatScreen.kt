@@ -1,26 +1,10 @@
 package com.example.chatbox.ui.chat
+import androidx.compose.material3.HorizontalDivider
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -56,10 +40,7 @@ fun ChatScreen(
                     },
                     actions = {
                         TextButton(onClick = { isDark = !isDark }) {
-                            Text(
-                                text = if (isDark) "☀️" else "🌙",
-                                style = MaterialTheme.typography.titleMedium
-                            )
+                            Text(if (isDark) "☀️" else "🌙")
                         }
                     }
                 )
@@ -71,6 +52,17 @@ fun ChatScreen(
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
+
+                // 小提示：当前对话是“有记忆”的
+                Text(
+                    text = "已开启上下文记忆：AI 会参考本会话所有历史消息。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)
@@ -86,10 +78,7 @@ fun ChatScreen(
                                     .padding(top = 32.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = "开始和 AI 聊天吧～",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                                Text("开始和 AI 聊天吧～")
                             }
                         }
                     } else {
@@ -110,12 +99,15 @@ fun ChatScreen(
                     )
                 }
 
-                Divider()
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
 
                 ChatInputBar(
                     text = uiState.inputText,
                     onTextChange = viewModel::onInputChange,
                     onSendClick = viewModel::onSendClick,
+                    onGenerateImageClick = viewModel::onGenerateImageClick,
+                    onGenerateVideoClick = viewModel::onGenerateVideoClick,
                     isSending = uiState.isSending
                 )
             }
@@ -124,9 +116,7 @@ fun ChatScreen(
 }
 
 @Composable
-private fun MessageBubble(
-    message: Message
-) {
+private fun MessageBubble(message: Message) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -137,13 +127,22 @@ private fun MessageBubble(
             Arrangement.Start
         }
     ) {
-        Box(
-            modifier = Modifier
-                .widthIn(max = 280.dp)
-                .padding(horizontal = 8.dp)
+        Surface(
+            color = if (message.isUser)
+                MaterialTheme.colorScheme.primary
+            else
+                MaterialTheme.colorScheme.surfaceVariant,
+            shape = MaterialTheme.shapes.medium
         ) {
             Text(
                 text = message.text,
+                color = if (message.isUser)
+                    MaterialTheme.colorScheme.onPrimary
+                else
+                    MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .widthIn(max = 280.dp),
                 style = MaterialTheme.typography.bodyMedium
             )
         }
@@ -155,31 +154,55 @@ private fun ChatInputBar(
     text: String,
     onTextChange: (String) -> Unit,
     onSendClick: () -> Unit,
+    onGenerateImageClick: () -> Unit,
+    onGenerateVideoClick: () -> Unit,
     isSending: Boolean
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(12.dp)
     ) {
-        OutlinedTextField(
-            value = text,
-            onValueChange = onTextChange,
-            modifier = Modifier.weight(1f),
-            placeholder = { Text("请输入消息") }
-        )
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        Button(
-            onClick = onSendClick,
-            enabled = !isSending && text.isNotBlank()
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = if (isSending) "发送中..." else "发送",
-                textAlign = TextAlign.Center
+            OutlinedTextField(
+                value = text,
+                onValueChange = onTextChange,
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("请输入内容…") }
             )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Button(
+                onClick = onSendClick,
+                enabled = !isSending && text.isNotBlank()
+            ) {
+                Text(if (isSending) "发送中…" else "发送")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            TextButton(
+                onClick = onGenerateImageClick,
+                enabled = !isSending && text.isNotBlank()
+            ) {
+                Text("✨ 文生图")
+            }
+
+            TextButton(
+                onClick = onGenerateVideoClick,
+                enabled = !isSending && text.isNotBlank()
+            ) {
+                Text("🎬 文生视频")
+            }
         }
     }
 }
