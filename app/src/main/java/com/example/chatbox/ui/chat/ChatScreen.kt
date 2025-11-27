@@ -1,9 +1,13 @@
 package com.example.chatbox.ui.chat
-import androidx.compose.material3.HorizontalDivider
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -13,8 +17,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.example.chatbox.domain.model.Message
 import com.example.chatbox.ui.theme.ChatboxTheme
 
@@ -101,7 +109,6 @@ fun ChatScreen(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-
                 ChatInputBar(
                     text = uiState.inputText,
                     onTextChange = viewModel::onInputChange,
@@ -115,8 +122,24 @@ fun ChatScreen(
     }
 }
 
+// =============== 消息气泡：根据内容判断文本 / 图片 / 视频 ===============
+
 @Composable
 private fun MessageBubble(message: Message) {
+    val bgColor = if (message.isUser)
+        MaterialTheme.colorScheme.primary
+    else
+        MaterialTheme.colorScheme.surfaceVariant
+
+    val contentColor = if (message.isUser)
+        MaterialTheme.colorScheme.onPrimary
+    else
+        MaterialTheme.colorScheme.onSurfaceVariant
+
+    val text = message.text
+    val imagePrefix = "图片已生成："
+    val videoPrefix = "视频已生成："
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -128,26 +151,93 @@ private fun MessageBubble(message: Message) {
         }
     ) {
         Surface(
-            color = if (message.isUser)
-                MaterialTheme.colorScheme.primary
-            else
-                MaterialTheme.colorScheme.surfaceVariant,
-            shape = MaterialTheme.shapes.medium
+            color = bgColor,
+            contentColor = contentColor,
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.widthIn(max = 280.dp)
         ) {
-            Text(
-                text = message.text,
-                color = if (message.isUser)
-                    MaterialTheme.colorScheme.onPrimary
-                else
-                    MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-                    .widthIn(max = 280.dp),
-                style = MaterialTheme.typography.bodyMedium
-            )
+            when {
+                text.startsWith(imagePrefix) -> {
+                    val url = text.removePrefix(imagePrefix).trim()
+                    ImageMessageContent(url = url)
+                }
+
+                text.startsWith(videoPrefix) -> {
+                    // 只取前一行作为主视频链接
+                    val raw = text.removePrefix(videoPrefix).trim()
+                    val url = raw.lines().firstOrNull()?.trim().orEmpty()
+                    VideoMessageContent(url = url)
+                }
+
+                else -> {
+                    Text(
+                        text = text,
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
         }
     }
 }
+
+// =============== 图片消息内容 ===============
+
+@Composable
+private fun ImageMessageContent(url: String) {
+    Column(
+        modifier = Modifier.padding(8.dp)
+    ) {
+        Text(
+            text = "图片已生成：",
+            style = MaterialTheme.typography.labelSmall
+        )
+        Spacer(Modifier.height(4.dp))
+        AsyncImage(
+            model = url,
+            contentDescription = "生成图片",
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 260.dp)
+                .clip(RoundedCornerShape(12.dp)),
+            contentScale = ContentScale.Crop
+        )
+    }
+}
+
+// =============== 视频消息内容（点击跳转外部播放器） ===============
+
+@Composable
+private fun VideoMessageContent(url: String) {
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier
+            .clickable(enabled = url.isNotBlank()) {
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    context.startActivity(intent)
+                } catch (_: Exception) {
+                }
+            }
+            .padding(10.dp)
+    ) {
+        Text(
+            text = "视频已生成，点击播放",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = url,
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+// =============== 底部输入栏（不变） ===============
 
 @Composable
 private fun ChatInputBar(
