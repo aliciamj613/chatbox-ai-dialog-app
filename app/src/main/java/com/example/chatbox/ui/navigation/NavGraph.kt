@@ -17,7 +17,10 @@ object Routes {
 }
 
 @Composable
-fun AppNavGraph() {
+fun AppNavGraph(
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit
+) {
     val navController = rememberNavController()
 
     NavHost(
@@ -43,7 +46,9 @@ fun AppNavGraph() {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(0) { inclusive = true }
                     }
-                }
+                },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = onToggleTheme
             )
         }
 
@@ -60,7 +65,9 @@ fun AppNavGraph() {
 
             ChatScreen(
                 conversationId = conversationId,
-                onBackToConversations = { navController.navigateUp() }
+                onBackToConversations = { navController.navigateUp() },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = onToggleTheme
             )
         }
     }

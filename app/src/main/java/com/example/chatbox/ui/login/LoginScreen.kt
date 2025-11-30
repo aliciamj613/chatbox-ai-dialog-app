@@ -7,6 +7,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.example.chatbox.ui.components.PasswordTextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +46,7 @@ fun LoginScreen(
     var registerConfirm by remember { mutableStateOf("") }
     var isRegistering by remember { mutableStateOf(false) }
 
-    // 忘记密码
+    // 忘记密码 / 重置密码
     var resetUsername by remember { mutableStateOf("") }
     var resetNewPassword by remember { mutableStateOf("") }
     var resetConfirm by remember { mutableStateOf("") }
@@ -71,41 +72,14 @@ fun LoginScreen(
                     AuthMode.REGISTER -> "注册新账号"
                     AuthMode.RESET -> "重置密码"
                 },
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineSmall
             )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // 顶部模式切换：登录 / 注册
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                TextButton(onClick = { mode = AuthMode.LOGIN; error = null; info = null }) {
-                    Text(
-                        text = "登录",
-                        color = if (mode == AuthMode.LOGIN)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                Spacer(modifier = Modifier.width(16.dp))
-                TextButton(onClick = { mode = AuthMode.REGISTER; error = null; info = null }) {
-                    Text(
-                        text = "注册",
-                        color = if (mode == AuthMode.REGISTER)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             when (mode) {
                 AuthMode.LOGIN -> {
+                    // 用户名
                     OutlinedTextField(
                         value = loginUsername,
                         onValueChange = { loginUsername = it },
@@ -116,12 +90,12 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    OutlinedTextField(
+                    // 密码（带眼睛）
+                    PasswordTextField(
                         value = loginPassword,
                         onValueChange = { loginPassword = it },
-                        label = { Text("密码") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        label = "密码",
+                        modifier = Modifier.fillMaxWidth()
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -134,6 +108,7 @@ fun LoginScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                     }
+
                     if (info != null) {
                         Text(
                             text = info!!,
@@ -142,6 +117,8 @@ fun LoginScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                     }
+
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     Button(
                         onClick = {
@@ -178,19 +155,30 @@ fun LoginScreen(
                             .padding(top = 8.dp),
                         enabled = !isLoggingIn
                     ) {
-                        Text(if (isLoggingIn) "登录中…" else "登录")
+                        Text(if (isLoggingIn) "登录中..." else "登录")
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    TextButton(onClick = {
-                        // 进入重置密码模式
-                        mode = AuthMode.RESET
-                        resetUsername = loginUsername
-                        error = null
-                        info = "请输入用户名和新密码来重置密码"
-                    }) {
-                        Text("忘记密码？")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        TextButton(onClick = {
+                            mode = AuthMode.REGISTER
+                            error = null
+                            info = null
+                        }) {
+                            Text("没有账号？去注册")
+                        }
+
+                        TextButton(onClick = {
+                            mode = AuthMode.RESET
+                            error = null
+                            info = null
+                        }) {
+                            Text("忘记密码？")
+                        }
                     }
                 }
 
@@ -205,22 +193,20 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    OutlinedTextField(
+                    PasswordTextField(
                         value = registerPassword,
                         onValueChange = { registerPassword = it },
-                        label = { Text("密码") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        label = "密码",
+                        modifier = Modifier.fillMaxWidth()
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    OutlinedTextField(
+                    PasswordTextField(
                         value = registerConfirm,
                         onValueChange = { registerConfirm = it },
-                        label = { Text("确认密码") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        label = "确认密码",
+                        modifier = Modifier.fillMaxWidth()
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -234,16 +220,26 @@ fun LoginScreen(
                         Spacer(modifier = Modifier.height(4.dp))
                     }
 
+                    if (info != null) {
+                        Text(
+                            text = info!!,
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+
                     Button(
                         onClick = {
-                            if (registerUsername.isBlank()
-                                || registerPassword.isBlank()
-                                || registerConfirm.isBlank()
+                            if (registerUsername.isBlank() ||
+                                registerPassword.isBlank() ||
+                                registerConfirm.isBlank()
                             ) {
-                                error = "请完整填写信息"
+                                error = "用户名和密码不能为空"
                                 info = null
                                 return@Button
                             }
+
                             if (registerPassword != registerConfirm) {
                                 error = "两次输入的密码不一致"
                                 info = null
@@ -281,7 +277,17 @@ fun LoginScreen(
                             .padding(top = 8.dp),
                         enabled = !isRegistering
                     ) {
-                        Text(if (isRegistering) "注册中…" else "注册并登录")
+                        Text(if (isRegistering) "注册中..." else "注册")
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    TextButton(onClick = {
+                        mode = AuthMode.LOGIN
+                        error = null
+                        info = null
+                    }) {
+                        Text("已有账号？去登录")
                     }
                 }
 
@@ -289,29 +295,27 @@ fun LoginScreen(
                     OutlinedTextField(
                         value = resetUsername,
                         onValueChange = { resetUsername = it },
-                        label = { Text("需要重置的用户名") },
+                        label = { Text("用户名") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    OutlinedTextField(
+                    PasswordTextField(
                         value = resetNewPassword,
                         onValueChange = { resetNewPassword = it },
-                        label = { Text("新密码") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        label = "新密码",
+                        modifier = Modifier.fillMaxWidth()
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    OutlinedTextField(
+                    PasswordTextField(
                         value = resetConfirm,
                         onValueChange = { resetConfirm = it },
-                        label = { Text("确认新密码") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        label = "确认新密码",
+                        modifier = Modifier.fillMaxWidth()
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -324,6 +328,7 @@ fun LoginScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                     }
+
                     if (info != null) {
                         Text(
                             text = info!!,
@@ -335,16 +340,17 @@ fun LoginScreen(
 
                     Button(
                         onClick = {
-                            if (resetUsername.isBlank()
-                                || resetNewPassword.isBlank()
-                                || resetConfirm.isBlank()
+                            if (resetUsername.isBlank() ||
+                                resetNewPassword.isBlank() ||
+                                resetConfirm.isBlank()
                             ) {
-                                error = "请完整填写信息"
+                                error = "用户名和密码不能为空"
                                 info = null
                                 return@Button
                             }
+
                             if (resetNewPassword != resetConfirm) {
-                                error = "两次输入的新密码不一致"
+                                error = "两次输入的密码不一致"
                                 info = null
                                 return@Button
                             }
@@ -362,10 +368,9 @@ fun LoginScreen(
                                             name = resetUsername.trim(),
                                             newPassword = resetNewPassword
                                         )
-                                        info = "密码已重置成功，请使用新密码登录"
+                                        info = "密码重置成功，请使用新密码登录"
+                                        // 可选：自动切回登录
                                         mode = AuthMode.LOGIN
-                                        loginUsername = resetUsername.trim()
-                                        loginPassword = ""
                                     }
                                 } catch (e: Exception) {
                                     e.printStackTrace()
@@ -380,7 +385,7 @@ fun LoginScreen(
                             .padding(top = 8.dp),
                         enabled = !isResetting
                     ) {
-                        Text(if (isResetting) "重置中…" else "确认重置")
+                        Text(if (isResetting) "重置中..." else "重置密码")
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))

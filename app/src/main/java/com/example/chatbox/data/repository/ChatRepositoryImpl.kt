@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.map
 import retrofit2.HttpException
 import java.io.IOException
 
+
+
 class ChatRepositoryImpl(
     private val messageDao: MessageDao,
     private val conversationDao: ConversationDao,
@@ -199,19 +201,28 @@ class ChatRepositoryImpl(
 
             val task = api.generateVideoTask(createRequest)
             val taskId = task.id
-            Log.d("ChatRepositoryImpl", "video task created, id=$taskId, status=${task.task_status}")
+            Log.d(
+                "ChatRepositoryImpl",
+                "video task created, id=$taskId, status=${task.task_status}"
+            )
 
-            // (2) 轮询异步结果：最多 10 次，每次间隔 5 秒
+            // (2) 轮询异步结果：最多 30 次，每次间隔 3 秒（总等待约 90 秒）
+            val maxPollCount = 30
+            val pollIntervalMillis = 3_000L
+
             var finalUrl: String? = null
             var finalCover: String? = null
             var finalStatus: String? = null
 
-            for (i in 0 until 10) {
-                delay(5_000L)
+            for (i in 0 until maxPollCount) {
+                delay(pollIntervalMillis)
 
                 val result = api.getAsyncResult(taskId)
                 finalStatus = result.task_status
-                Log.d("ChatRepositoryImpl", "video async result poll #$i status=$finalStatus")
+                Log.d(
+                    "ChatRepositoryImpl",
+                    "video async result poll #$i status=$finalStatus, requestId=${result.request_id}"
+                )
 
                 if (result.task_status == "SUCCESS") {
                     val first = result.video_result?.firstOrNull()
@@ -224,7 +235,9 @@ class ChatRepositoryImpl(
             }
 
             if (finalUrl == null) {
-                throw RuntimeException("视频生成超时或未返回 URL（taskId=$taskId, status=$finalStatus）")
+                throw RuntimeException(
+                    "视频生成超时或未返回 URL（taskId=$taskId, status=$finalStatus）"
+                )
             }
 
             val replyTime = System.currentTimeMillis()
@@ -252,7 +265,11 @@ class ChatRepositoryImpl(
 
             Result.success(Unit)
         } catch (e: HttpException) {
-            Log.e("ChatRepositoryImpl", "generateVideo HTTP error: ${e.code()} ${e.message()}", e)
+            Log.e(
+                "ChatRepositoryImpl",
+                "generateVideo HTTP error: ${e.code()} ${e.message()}",
+                e
+            )
             Result.failure(e)
         } catch (e: IOException) {
             Log.e("ChatRepositoryImpl", "generateVideo Network error: ${e.message}", e)
@@ -262,6 +279,7 @@ class ChatRepositoryImpl(
             Result.failure(e)
         }
     }
+
 
     // =====================================================
     // 5. 更新会话标题 & 更新时间（共用逻辑）

@@ -4,8 +4,19 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -14,12 +25,17 @@ import com.example.chatbox.data.local.db.AppDatabase
 import com.example.chatbox.data.local.prefs.UserPreferences
 import com.example.chatbox.data.model.ConversationEntity
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConversationListScreen(
     onOpenConversation: (Long) -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.getDatabase(context) }
@@ -57,6 +73,9 @@ fun ConversationListScreen(
             TopAppBar(
                 title = { Text("我的对话") },
                 actions = {
+                    TextButton(onClick = onToggleTheme) {
+                        Text(if (isDarkTheme) "☀️" else "🌙")
+                    }
                     TextButton(onClick = onLogout) {
                         Text("退出登录")
                     }
@@ -140,7 +159,7 @@ private fun ConversationRow(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "最近更新：${conversation.updatedAt}",
+                text = "最近更新：${formatUpdatedAt(conversation.updatedAt)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -153,4 +172,11 @@ private fun ConversationRow(
             )
         }
     }
+}
+
+private fun formatUpdatedAt(timestamp: Long): String {
+    if (timestamp <= 0L) return "-"
+    val date = Date(timestamp)
+    val formatter = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault())
+    return formatter.format(date)
 }

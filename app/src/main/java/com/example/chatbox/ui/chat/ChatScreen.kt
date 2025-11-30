@@ -25,41 +25,44 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.chatbox.domain.model.Message
 import com.example.chatbox.ui.theme.ChatboxTheme
+import androidx.compose.ui.viewinterop.AndroidView
+import android.widget.VideoView
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
     conversationId: Long,
     onBackToConversations: () -> Unit,
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit,
     viewModel: ChatViewModel = ChatViewModel(conversationId = conversationId)
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var isDark by rememberSaveable { mutableStateOf(false) }
 
-    ChatboxTheme(darkTheme = isDark) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text(text = "对话 #$conversationId") },
-                    navigationIcon = {
-                        TextButton(onClick = onBackToConversations) {
-                            Text("会话")
-                        }
-                    },
-                    actions = {
-                        TextButton(onClick = { isDark = !isDark }) {
-                            Text(if (isDark) "☀️" else "🌙")
-                        }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = "对话详情") },
+                navigationIcon = {
+                    TextButton(onClick = onBackToConversations) {
+                        Text("会话")
                     }
-                )
-            },
-            modifier = Modifier.fillMaxSize()
-        ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
+                },
+                actions = {
+                    TextButton(onClick = onToggleTheme) {
+                        Text(if (isDarkTheme) "☀️" else "🌙")
+                    }
+                }
+            )
+        },
+        modifier = Modifier.fillMaxSize()
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
 
                 // 小提示：当前对话是“有记忆”的
                 Text(
@@ -120,7 +123,7 @@ fun ChatScreen(
             }
         }
     }
-}
+
 
 // =============== 消息气泡：根据内容判断文本 / 图片 / 视频 ===============
 
@@ -208,34 +211,60 @@ private fun ImageMessageContent(url: String) {
 
 // =============== 视频消息内容（点击跳转外部播放器） ===============
 
+// =============== 视频消息内容（在对话框内播放） ===============
+
 @Composable
 private fun VideoMessageContent(url: String) {
     val context = LocalContext.current
 
     Column(
         modifier = Modifier
-            .clickable(enabled = url.isNotBlank()) {
-                try {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    context.startActivity(intent)
-                } catch (_: Exception) {
-                }
-            }
-            .padding(10.dp)
+            .padding(8.dp)
     ) {
         Text(
-            text = "视频已生成，点击播放",
+            text = "视频预览：",
             style = MaterialTheme.typography.bodyMedium
         )
         Spacer(Modifier.height(4.dp))
-        Text(
-            text = url,
-            style = MaterialTheme.typography.labelSmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+
+        if (url.isNotBlank()) {
+            // 使用 VideoView 在气泡中直接播放视频
+            AndroidView(
+                factory = { ctx ->
+                    VideoView(ctx).apply {
+                        setVideoURI(Uri.parse(url))
+                        setOnPreparedListener { mediaPlayer ->
+                            mediaPlayer.isLooping = true   // 如果不想循环可以去掉
+                            start()
+                        }
+                        // 也可以加上简单的控制条：
+                        // setMediaController(MediaController(ctx).apply { setAnchorView(this@apply) })
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16 / 9f) // 简单固定个 16:9 比例
+            )
+
+            Spacer(Modifier.height(4.dp))
+
+            // 下面保留一行 URL，方便调试 / 复制
+            Text(
+                text = url,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        } else {
+            Text(
+                text = "视频链接为空，无法播放",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
     }
 }
+
 
 // =============== 底部输入栏（不变） ===============
 
